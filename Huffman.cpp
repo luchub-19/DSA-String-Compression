@@ -21,14 +21,18 @@ struct HuffmanNode {
         delete right;
     }
 };
-
+inline bool isSmaller(HuffmanNode* a, HuffmanNode* b) {
+    if (a->freq != b->freq) return a->freq < b->freq;
+    return a->ch < b->ch; 
+}
 class MinHeap {
 private:
     std::vector<HuffmanNode*> heap;
+
     void heapifyUp(int index) {
         while (index > 0) {
             int parent = (index - 1) / 2;
-            if (heap[index]->freq < heap[parent]->freq) {
+            if (isSmaller(heap[index], heap[parent])) {
                 HuffmanNode* temp = heap[index];
                 heap[index] = heap[parent];
                 heap[parent] = temp;
@@ -46,10 +50,11 @@ private:
             int leftChild = 2 * index + 1;
             int rightChild = 2 * index + 2;
             int smallest = index;
-            if (heap[leftChild]->freq < heap[smallest]->freq) {
+
+            if (isSmaller(heap[leftChild], heap[smallest])) {
                 smallest = leftChild;
             }
-            if (rightChild < size && heap[rightChild]->freq < heap[smallest]->freq) {
+            if (rightChild < size && isSmaller(heap[rightChild], heap[smallest])) {
                 smallest = rightChild;
             }
             if (smallest != index) {
@@ -66,7 +71,7 @@ private:
 
 public:
     int size() const { return (int)heap.size(); }
-    
+
     void push(HuffmanNode* node) {
         heap.push_back(node);
         heapifyUp((int)heap.size() - 1);
@@ -88,10 +93,8 @@ private:
     FILE* outFile;
     unsigned char buffer;
     int bitCount;
-
 public:
     BitWriter(FILE* f) : outFile(f), buffer(0), bitCount(0) {}
-
     void writeBit(int bit) {
         if (bit) {
             buffer |= (1 << (7 - bitCount));
@@ -103,11 +106,13 @@ public:
             bitCount = 0;
         }
     }
+
     void writeCode(const std::string& code) {
         for (char c : code) {
             writeBit(c == '1' ? 1 : 0);
         }
     }
+
     void flush() {
         if (bitCount > 0) {
             fwrite(&buffer, 1, 1, outFile);
@@ -152,6 +157,7 @@ bool compressHuffman(const std::string& inputPath, const std::string& outputPath
     unsigned long long freq[256] = { 0 };
     unsigned long long totalBytes = 0;
     unsigned char ch;
+
     while (fread(&ch, 1, 1, inFile) == 1) {
         freq[ch]++;
         totalBytes++;
@@ -183,7 +189,7 @@ bool compressHuffman(const std::string& inputPath, const std::string& outputPath
     }
 
     HuffmanNode* root = heap.pop();
-
+    
     std::string codes[256];
     if (uniqueSymbols == 1) {
         codes[root->ch] = "0";
@@ -236,6 +242,7 @@ bool decompressHuffman(const std::string& inputPath, const std::string& outputPa
         if (outFile) fclose(outFile);
         return true;
     }
+
     unsigned short K = 0;
     fread(&K, sizeof(K), 1, inFile);
 
@@ -247,16 +254,19 @@ bool decompressHuffman(const std::string& inputPath, const std::string& outputPa
         fread(&f, sizeof(f), 1, inFile);
         freq[sym] = f;
     }
+
     MinHeap heap;
     for (int i = 0; i < 256; i++) {
         if (freq[i] > 0) {
             heap.push(new HuffmanNode((unsigned char)i, freq[i]));
         }
     }
+
     if (heap.size() == 0) {
         fclose(inFile);
         return true;
     }
+
     while (heap.size() > 1) {
         HuffmanNode* left = heap.pop();
         HuffmanNode* right = heap.pop();
@@ -300,6 +310,7 @@ bool decompressHuffman(const std::string& inputPath, const std::string& outputPa
             }
         }
     }
+
     delete root;
     fclose(inFile);
     fclose(outFile);
