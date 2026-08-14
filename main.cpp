@@ -1,76 +1,60 @@
-#include "utils.h"
-#include "rle.h"
-#include "lzw.h"
-#include "huffman.h"
 #include <iostream>
-#include <cstring>
-#include <chrono> // Bắt buộc dùng để lấy thời gian chạy (ms)
+#include <fstream>
+#include <cassert>
+#include "rle.h"
+#include "bonus_lz77.h"
 
 using namespace std;
 
-int main(int argc, char* argv[]) {
-    string algo = "", mode = "", input_file = "", output_file = "";
-    
-    // Đọc tham số dòng lệnh: -a [algo] -m [mode] -i [input] -o [output]
-    for (int i = 1; i < argc; i += 2) {
-        if (i + 1 >= argc) break;
-        if (strcmp(argv[i], "-a") == 0) algo = argv[i+1];
-        else if (strcmp(argv[i], "-m") == 0) mode = argv[i+1];
-        else if (strcmp(argv[i], "-i") == 0) input_file = argv[i+1];
-        else if (strcmp(argv[i], "-o") == 0) output_file = argv[i+1];
+void createDummyFile(const string& filename, const string& content) {
+    ofstream out(filename, ios::binary);
+    out << content;
+    out.close();
+}
+
+bool areFilesEqual(const string& file1, const string& file2) {
+    ifstream f1(file1, ios::binary);
+    ifstream f2(file2, ios::binary);
+
+    if (!f1.is_open() || !f2.is_open()) return false;
+
+    char b1, b2;
+    while (f1.get(b1) && f2.get(b2)) {
+        if (b1 != b2) return false;
     }
+    return f1.eof() == f2.eof();
+}
 
-    if (algo.empty() || mode.empty() || input_file.empty() || output_file.empty()) {
-        cout << "Usage: compressor -a [algorithm] -m [mode] -i [input_file] -o [output_file]\n";
-        return 1;
+int main() {
+    string sampleText = "BABBACACAAAAAAAAAAAAAAABBBBBBBBBBB";
+    createDummyFile("test_input.txt", sampleText);
+
+    // 1. Test RLE
+    cout << "[1] Testing RLE Algorithm..." << endl;
+    if (compressRLE("test_input.txt", "rle_compressed.bin")) {
+        cout << " -> Compression: SUCCESS" << endl;
     }
-
-  string input_data = readFile(input_file);
-    if (input_data.empty()) {
-        cout << "Error: File dữ liệu trống hoặc bạn chưa lưu file!\n";
-        return 1; // Thoát nếu không đọc được file
+    if (decompressRLE("rle_compressed.bin", "rle_decompressed.txt")) {
+        cout << " -> Decompression: SUCCESS" << endl;
     }
-
-    string output_data = "";
-    
-    // Bắt đầu đếm thời gian
-    auto start = chrono::high_resolution_clock::now();
-
-    // Rẽ nhánh gọi đúng hàm của thuật toán
-    if (algo == "rle") {
-        if (mode == "c") output_data = rleCompress(input_data);
-        else if (mode == "d") output_data = rleDecompress(input_data);
-    } 
-    else if (algo == "huff") {
-        if (mode == "c") output_data = huffCompress(input_data);
-        else if (mode == "d") output_data = huffDecompress(input_data);
-    } 
-    else if (algo == "lzw") {
-        if (mode == "c") output_data = lzwCompress(input_data);
-        else if (mode == "d") output_data = lzwDecompress(input_data);
+    if (areFilesEqual("test_input.txt", "rle_decompressed.txt")) {
+        cout << " => RLE TEST PASSED: Restored file matches original exactly!" << endl;
     } else {
-        cout << "Error: Unknown algorithm. Use rle, huff, or lzw.\n";
-        return 1;
+        cout << " => RLE TEST FAILED: Data mismatch!" << endl;
     }
 
-    // Kết thúc đếm thời gian
-    auto end = chrono::high_resolution_clock::now();
-    chrono::duration<double, std::milli> duration = end - start;
+    cout << "------------------------------------------" << endl;
 
-    writeFile(output_file, output_data);
-
-    // Tính toán và in thống kê hiệu suất
-    RunMetrics metrics;
-    metrics.exec_time_ms = duration.count();
-    metrics.original_size = input_data.length();
-    metrics.compressed_size = output_data.length();
-    
-    // Chỉ in bảng thống kê khi ở chế độ nén (mode c)
-    if (mode == "c") {
-        printPerformanceSummary(algo, metrics);
+    if (compressLZ77("test_input.txt", "lz77_compressed.bin")) {
+        cout << " -> Compression: SUCCESS" << endl;
+    }
+    if (decompressLZ77("lz77_compressed.bin", "lz77_decompressed.txt")) {
+        cout << " -> Decompression: SUCCESS" << endl;
+    }
+    if (areFilesEqual("test_input.txt", "lz77_decompressed.txt")) {
+        cout << " => LZ77 TEST PASSED: Restored file matches original exactly!" << endl;
     } else {
-        cout << "Decompression complete. Output written to: " << output_file << "\n";
+        cout << " => LZ77 TEST FAILED: Data mismatch!" << endl;
     }
-
     return 0;
 }
