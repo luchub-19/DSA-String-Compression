@@ -1,75 +1,58 @@
-#include "utils.h"
-#include "rle.h"
-#include "lzw.h"
-#include "huffman.h"
 #include <iostream>
-#include <cstring>
-#include <chrono> // Bắt buộc dùng để lấy thời gian chạy (ms)
+#include <ctime>
+#include "Huffman.h"
 
 using namespace std;
 
-int main(int argc, char* argv[]) {
-    string algo = "", mode = "", input_file = "", output_file = "";
-    
-    // Đọc tham số dòng lệnh: -a [algo] -m [mode] -i [input] -o [output]
-    for (int i = 1; i < argc; i += 2) {
-        if (i + 1 >= argc) break;
-        if (strcmp(argv[i], "-a") == 0) algo = argv[i+1];
-        else if (strcmp(argv[i], "-m") == 0) mode = argv[i+1];
-        else if (strcmp(argv[i], "-i") == 0) input_file = argv[i+1];
-        else if (strcmp(argv[i], "-o") == 0) output_file = argv[i+1];
-    }
+// Hàm phụ trợ tính kích thước file (byte) bằng FILE* C-style
+long getFileSize(const string& filename) {
+    FILE* f = fopen(filename.c_str(), "rb");
+    if (!f) return -1;
+    fseek(f, 0, SEEK_END);
+    long size = ftell(f);
+    fclose(f);
+    return size;
+}
 
-    if (algo.empty() || mode.empty() || input_file.empty() || output_file.empty()) {
-        cout << "Usage: compressor -a [algorithm] -m [mode] -i [input_file] -o [output_file]\n";
+int main() {
+    string inFile = "test.txt";
+    string compressedFile = "test.huff";
+    string decompressedFile = "test_restored.txt";
+
+    cout << "=== CHECK TINH DUNG DAN CUA HUFFMAN CODING ===" << endl;
+
+    // 1. CHẠY THỬ NÉN
+    clock_t start = clock();
+    bool cOk = compressHuffman(inFile, compressedFile);
+    clock_t end = clock();
+
+    if (!cOk) {
+        cout << "Loi: Khong the nen file! (Kiem tra xem file " << inFile << " co ton tai khong)" << endl;
         return 1;
     }
 
-  string input_data = readFile(input_file);
-    if (input_data.empty()) {
-        cout << "Error: File dữ liệu trống hoặc bạn chưa lưu file!\n";
-        return 1; // Thoát nếu không đọc được file
+    double execTime = (double)(end - start) * 1000.0 / CLOCKS_PER_SEC;
+    long origSize = getFileSize(inFile);
+    long compSize = getFileSize(compressedFile);
+
+    cout << "\n[NEN THANH CONG]" << endl;
+    cout << "Thoi gian chay: " << execTime << " ms" << endl;
+    cout << "Kich thuoc goc: " << origSize << " bytes" << endl;
+    cout << "Kich thuoc nen: " << compSize << " bytes" << endl;
+    if (origSize > 0) {
+        cout << "Ti le nen (Compression Ratio): " << (double)origSize / compSize << endl;
+        cout << "Tiet kiem b/o (Space Savings): " << (1.0 - (double)compSize / origSize) * 100.0 << "%" << endl;
     }
 
-    string output_data = "";
-    
-    // Bắt đầu đếm thời gian
-    auto start = chrono::high_resolution_clock::now();
-
-    // Rẽ nhánh gọi đúng hàm của thuật toán
-    if (algo == "rle") {
-        if (mode == "c") output_data = rleCompress(input_data);
-        else if (mode == "d") output_data = rleDecompress(input_data);
-    } 
-    else if (algo == "huff") {
-        if (mode == "c") output_data = huffCompress(input_data);
-        else if (mode == "d") output_data = huffDecompress(input_data);
-    } 
-    else if (algo == "lzw") {
-        if (mode == "c") output_data = lzwCompress(input_data);
-        else if (mode == "d") output_data = lzwDecompress(input_data);
-    } else {
-        cout << "Error: Unknown algorithm. Use rle, huff, or lzw.\n";
-        return 1;
+    // 2. CHẠY THỬ GIẢI NÉN
+    bool dOk = decompressHuffman(compressedFile, decompressedFile);
+    if (dOk) {
+        cout << "\n[GIAI NEN THANH CONG]" << endl;
+        cout << "File khoi phuc da duoc luu tai: " << decompressedFile << endl;
+        cout << "-> Tien hay mo file " << inFile << " va " << decompressedFile << " ra so sanh xem noi dung co giong hệt 100% khong nha!" << endl;
     }
-
-    // Kết thúc đếm thời gian
-    auto end = chrono::high_resolution_clock::now();
-    chrono::duration<double, std::milli> duration = end - start;
-
-    writeFile(output_file, output_data);
-
-    // Tính toán và in thống kê hiệu suất
-    RunMetrics metrics;
-    metrics.exec_time_ms = duration.count();
-    metrics.original_size = input_data.length();
-    metrics.compressed_size = output_data.length();
-    
-    // Chỉ in bảng thống kê khi ở chế độ nén (mode c)
-    if (mode == "c") {
-        printPerformanceSummary(algo, metrics);
-    } else {
-        cout << "Decompression complete. Output written to: " << output_file << "\n";
+    else {
+        cout << "\nLoi: Giai nen THAT BAI!" << endl;
     }
 
     return 0;
