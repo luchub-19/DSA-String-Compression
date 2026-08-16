@@ -1,2 +1,7 @@
 .vscode
 build/
+compressor
+compressor.exe
+*.o
+*.dSYM/
+.DS_Store

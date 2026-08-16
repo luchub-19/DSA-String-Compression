@@ -85,3 +85,21 @@ bool decompressLZ77(const string& inputPath, const string& outputPath) {
     outFile.close();
     return true;
 }
+
+// ============================================================
+// ICompressor adapter — wraps the free functions above
+// ============================================================
+
+#include <stdexcept>
+
+void LZ77Compressor::compress(const std::string& inputPath, const std::string& outputPath) {
+    if (!compressLZ77(inputPath, outputPath)) {
+        throw std::runtime_error("LZ77 compression failed (check input file).");
+    }
+}
+
+void LZ77Compressor::decompress(const std::string& inputPath, const std::string& outputPath) {
+    if (!decompressLZ77(inputPath, outputPath)) {
+        throw std::runtime_error("LZ77 decompression failed (corrupted or invalid input).");
+    }
+}

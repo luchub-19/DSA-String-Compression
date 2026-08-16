@@ -61,3 +61,21 @@ bool decompressRLE(const string& inputPath, const string& outputPath) {
     outFile.close();
     return true;
 }
+
+// ============================================================
+// ICompressor adapter — wraps the free functions above
+// ============================================================
+
+#include <stdexcept>
+
+void RLECompressor::compress(const std::string& inputPath, const std::string& outputPath) {
+    if (!compressRLE(inputPath, outputPath)) {
+        throw std::runtime_error("RLE compression failed (check input file).");
+    }
+}
+
+void RLECompressor::decompress(const std::string& inputPath, const std::string& outputPath) {
+    if (!decompressRLE(inputPath, outputPath)) {
+        throw std::runtime_error("RLE decompression failed (corrupted or invalid input).");
+    }
+}
