@@ -1,117 +1,148 @@
-// #include <iostream>
-// #include <fstream>
-// #include <cassert>
-// #include "rle.h"
-// #include "bonus_lz77.h"
+// main.cpp
+//
+// Command-line entry point for the compression tool:
+//   compressor[.exe] -a [algorithm] -m [mode] -i [input_file] -o [output_file]
+//
+// Owner: Phat (CLI framework + performance metrics)
+//
+// This file only knows about the ICompressor interface, so RLE/Huffman can
+// be implemented independently by teammates without touching this file.
 
-// using namespace std;
-
-// void createDummyFile(const string& filename, const string& content) {
-//     ofstream out(filename, ios::binary);
-//     out << content;
-//     out.close();
-// }
-
-// bool areFilesEqual(const string& file1, const string& file2) {
-//     ifstream f1(file1, ios::binary);
-//     ifstream f2(file2, ios::binary);
-
-//     if (!f1.is_open() || !f2.is_open()) return false;
-
-//     char b1, b2;
-//     while (f1.get(b1) && f2.get(b2)) {
-//         if (b1 != b2) return false;
-//     }
-//     return f1.eof() == f2.eof();
-// }
-
-// int main() {
-//     string sampleText = "BABBACACAAAAAAAAAAAAAAABBBBBBBBBBB";
-//     createDummyFile("test_input.txt", sampleText);
-
-//     // 1. Test RLE
-//     cout << "[1] Testing RLE Algorithm..." << endl;
-//     if (compressRLE("test_input.txt", "rle_compressed.bin")) {
-//         cout << " -> Compression: SUCCESS" << endl;
-//     }
-//     if (decompressRLE("rle_compressed.bin", "rle_decompressed.txt")) {
-//         cout << " -> Decompression: SUCCESS" << endl;
-//     }
-//     if (areFilesEqual("test_input.txt", "rle_decompressed.txt")) {
-//         cout << " => RLE TEST PASSED: Restored file matches original exactly!" << endl;
-//     } else {
-//         cout << " => RLE TEST FAILED: Data mismatch!" << endl;
-//     }
-
-//     cout << "------------------------------------------" << endl;
-
-//     if (compressLZ77("test_input.txt", "lz77_compressed.bin")) {
-//         cout << " -> Compression: SUCCESS" << endl;
-//     }
-//     if (decompressLZ77("lz77_compressed.bin", "lz77_decompressed.txt")) {
-//         cout << " -> Decompression: SUCCESS" << endl;
-//     }
-//     if (areFilesEqual("test_input.txt", "lz77_decompressed.txt")) {
-//         cout << " => LZ77 TEST PASSED: Restored file matches original exactly!" << endl;
-//     } else {
-//         cout << " => LZ77 TEST FAILED: Data mismatch!" << endl;
-//     }
-//     return 0;
-#include <iostream>
-#include <ctime>
+#include "compressor.hpp"
 #include "Huffman.h"
+#include "lzw.hpp"
+#include "rle.h"
+#include "bonus_lz77.h"
 
-using namespace std;
+#include <chrono>
+#include <filesystem>
+#include <iomanip>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <unordered_map>
 
-// Hàm phụ trợ tính kích thước file (byte) bằng FILE* C-style
-long getFileSize(const string& filename) {
-    FILE* f = fopen(filename.c_str(), "rb");
-    if (!f) return -1;
-    fseek(f, 0, SEEK_END);
-    long size = ftell(f);
-    fclose(f);
-    return size;
+namespace fs = std::filesystem;
+
+namespace {
+
+void printUsage(const char* progName) {
+    std::cerr << "Usage: " << progName << " -a [algorithm] -m [mode] -i [input_file] -o [output_file]\n\n"
+              << "Options:\n"
+              << "  -a [algorithm]   Select algorithm: rle, huff, lzw, lz77\n"
+              << "  -m [mode]        Select mode: c (compress), d (decompress)\n"
+              << "  -i [input_file]  Path to the source file\n"
+              << "  -o [output_file] Path to the resulting file\n";
 }
 
-int main() {
-    string inFile = "test.txt";
-    string compressedFile = "test.huff";
-    string decompressedFile = "test_restored.txt";
+std::unique_ptr<ICompressor> createCompressor(const std::string& algo) {
+    if (algo == "lzw")  return std::make_unique<LZWCompressor>();
+    if (algo == "rle")  return std::make_unique<RLECompressor>();
+    if (algo == "huff") return std::make_unique<HuffmanCompressor>();
+    if (algo == "lz77") return std::make_unique<LZ77Compressor>();
+    return nullptr;
+}
 
-    cout << "=== CHECK TINH DUNG DAN CUA HUFFMAN CODING ===" << endl;
+// Parses "-x value" pairs into a map. Returns false (and prints an error)
+// on any malformed argument.
+bool parseArgs(int argc, char** argv, std::unordered_map<std::string, std::string>& out) {
+    for (int i = 1; i < argc; ++i) {
+        std::string token = argv[i];
+        if (token.size() == 2 && token[0] == '-' && i + 1 < argc) {
+            out[token] = argv[++i];
+        } else {
+            std::cerr << "Error: unrecognized or incomplete argument '" << token << "'\n";
+            return false;
+        }
+    }
+    return true;
+}
 
-    // 1. CHẠY THỬ NÉN
-    clock_t start = clock();
-    bool cOk = compressHuffman(inFile, compressedFile);
-    clock_t end = clock();
+void printPerformanceSummary(const std::string& mode,
+                              const std::string& algoDisplayName,
+                              double elapsedMs,
+                              std::uint64_t inputSize,
+                              std::uint64_t outputSize) {
+    std::cout << (mode == "c" ? "Compression complete." : "Decompression complete.") << '\n';
+    std::cout << "--------------------------------\n";
+    std::cout << "Algorithm: " << algoDisplayName << '\n';
+    std::cout << std::fixed << std::setprecision(2);
+    std::cout << "Execution Time: " << elapsedMs << " ms\n";
 
-    if (!cOk) {
-        cout << "Loi: Khong the nen file! (Kiem tra xem file " << inFile << " co ton tai khong)" << endl;
+    if (mode == "c") {
+        std::cout << "Original Size: " << inputSize << " bytes\n";
+        std::cout << "Compressed Size: " << outputSize << " bytes\n";
+
+        double ratio = outputSize > 0
+                           ? static_cast<double>(inputSize) / static_cast<double>(outputSize)
+                           : 0.0;
+        double savingsPct = inputSize > 0
+                                 ? (1.0 - static_cast<double>(outputSize) / static_cast<double>(inputSize)) * 100.0
+                                 : 0.0;
+
+        std::cout << std::setprecision(2) << "Compression Ratio: " << ratio << '\n';
+        std::cout << std::setprecision(1) << "Space Savings: " << savingsPct << "%\n";
+    } else {
+        // Decompression: ratio/space-savings are compression-specific
+        // metrics, so we report sizes only.
+        std::cout << "Compressed Size: " << inputSize << " bytes\n";
+        std::cout << "Decompressed Size: " << outputSize << " bytes\n";
+    }
+}
+
+} // namespace
+
+int main(int argc, char** argv) {
+    std::unordered_map<std::string, std::string> args;
+    if (!parseArgs(argc, argv, args)) {
+        printUsage(argv[0]);
         return 1;
     }
 
-    double execTime = (double)(end - start) * 1000.0 / CLOCKS_PER_SEC;
-    long origSize = getFileSize(inFile);
-    long compSize = getFileSize(compressedFile);
-
-    cout << "\n[NEN THANH CONG]" << endl;
-    cout << "Thoi gian chay: " << execTime << " ms" << endl;
-    cout << "Kich thuoc goc: " << origSize << " bytes" << endl;
-    cout << "Kich thuoc nen: " << compSize << " bytes" << endl;
-    if (origSize > 0) {
-        cout << "Ti le nen (Compression Ratio): " << (double)origSize / compSize << endl;
-        cout << "Tiet kiem b/o (Space Savings): " << (1.0 - (double)compSize / origSize) * 100.0 << "%" << endl;
+    if (!args.count("-a") || !args.count("-m") || !args.count("-i") || !args.count("-o")) {
+        std::cerr << "Error: missing required arguments (-a, -m, -i, -o are all required).\n";
+        printUsage(argv[0]);
+        return 1;
     }
 
-    // 2. CHẠY THỬ GIẢI NÉN
-    bool dOk = decompressHuffman(compressedFile, decompressedFile);
-    if (dOk) {
-        cout << "\n[GIAI NEN THANH CONG]" << endl;
-        cout << "File khoi phuc da duoc luu tai: " << decompressedFile << endl;
-        cout << "-> Tien hay mo file " << inFile << " va " << decompressedFile << " ra so sanh xem noi dung co giong hệt 100% khong nha!" << endl;
+    const std::string algo = args["-a"];
+    const std::string mode = args["-m"];
+    const std::string inputPath = args["-i"];
+    const std::string outputPath = args["-o"];
+
+    if (mode != "c" && mode != "d") {
+        std::cerr << "Error: mode must be 'c' (compress) or 'd' (decompress), got '" << mode << "'.\n";
+        return 1;
     }
-    else {
-        cout << "\nLoi: Giai nen THAT BAI!" << endl;
+
+    std::unique_ptr<ICompressor> compressor = createCompressor(algo);
+    if (!compressor) {
+        std::cerr << "Error: unknown algorithm '" << algo << "'. Choose from: rle, huff, lzw, lz77\n";
+        return 1;
+    }
+
+    if (!fs::exists(inputPath)) {
+        std::cerr << "Error: input file does not exist: " << inputPath << '\n';
+        return 1;
+    }
+
+    try {
+        const auto start = std::chrono::high_resolution_clock::now();
+        if (mode == "c") {
+            compressor->compress(inputPath, outputPath);
+        } else {
+            compressor->decompress(inputPath, outputPath);
+        }
+        const auto end = std::chrono::high_resolution_clock::now();
+        const double elapsedMs = std::chrono::duration<double, std::milli>(end - start).count();
+
+        const auto inputSize = static_cast<std::uint64_t>(fs::file_size(inputPath));
+        const auto outputSize = static_cast<std::uint64_t>(fs::file_size(outputPath));
+
+        printPerformanceSummary(mode, compressor->name(), elapsedMs, inputSize, outputSize);
+    } catch (const std::exception& ex) {
+        std::cerr << "Error: " << ex.what() << '\n';
+        return 1;
     }
 
     return 0;

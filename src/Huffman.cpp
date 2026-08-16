@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <cstring>
+#include <stdexcept>
 
 using namespace std;
 
@@ -315,4 +316,20 @@ bool decompressHuffman(const std::string& inputPath, const std::string& outputPa
     fclose(inFile);
     fclose(outFile);
     return true;
+}
+
+// ============================================================
+// ICompressor adapter — wraps the free functions above
+// ============================================================
+
+void HuffmanCompressor::compress(const std::string& inputPath, const std::string& outputPath) {
+    if (!compressHuffman(inputPath, outputPath)) {
+        throw std::runtime_error("Huffman compression failed (check input file).");
+    }
+}
+
+void HuffmanCompressor::decompress(const std::string& inputPath, const std::string& outputPath) {
+    if (!decompressHuffman(inputPath, outputPath)) {
+        throw std::runtime_error("Huffman decompression failed (corrupted or invalid input).");
+    }
 }
