@@ -5,8 +5,6 @@
 // Adapter wrapper: Phat (ICompressor integration)
 
 #pragma once
-#ifndef HUFFMAN_H
-#define HUFFMAN_H
 
 #include <string>
 #include "compressor.hpp"
@@ -22,5 +20,3 @@ public:
     void decompress(const std::string& inputPath, const std::string& outputPath) override;
     std::string name() const override { return "Huffman"; }
 };
-
-#endif // HUFFMAN_H

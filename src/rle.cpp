@@ -3,17 +3,16 @@
 #include <vector>
 #include <cstdint>
 #include <iostream>
-using namespace std;
 
-bool compressRLE(const string& inputPath, const string& outputPath) {
-    ifstream inFile(inputPath, ios::binary);
+bool compressRLE(const std::string& inputPath, const std::string& outputPath) {
+    std::ifstream inFile(inputPath, std::ios::binary);
     if (!inFile.is_open()) return false;
 
-    vector<uint8_t> buffer((istreambuf_iterator<char>(inFile)),
-                                 istreambuf_iterator<char>());
+    std::vector<std::uint8_t> buffer((std::istreambuf_iterator<char>(inFile)),
+                                      std::istreambuf_iterator<char>());
     inFile.close();
 
-    ofstream outFile(outputPath, ios::binary);
+    std::ofstream outFile(outputPath, std::ios::binary);
     if (!outFile.is_open()) return false;
 
     if (buffer.empty()) {
@@ -21,11 +20,11 @@ bool compressRLE(const string& inputPath, const string& outputPath) {
         return true;
     }
 
-    size_t n = buffer.size();
-    size_t i = 0;
+    std::size_t n = buffer.size();
+    std::size_t i = 0;
     while (i < n) {
-        uint8_t currentChar = buffer[i];
-        uint8_t count = 1;
+        std::uint8_t currentChar = buffer[i];
+        std::uint8_t count = 1;
 
         while (i + 1 < n && buffer[i + 1] == currentChar && count < 255) {
             count++;
@@ -41,18 +40,18 @@ bool compressRLE(const string& inputPath, const string& outputPath) {
     return true;
 }
 
-bool decompressRLE(const string& inputPath, const string& outputPath) {
-    ifstream inFile(inputPath, ios::binary);
+bool decompressRLE(const std::string& inputPath, const std::string& outputPath) {
+    std::ifstream inFile(inputPath, std::ios::binary);
     if (!inFile.is_open()) return false;
 
-    ofstream outFile(outputPath, ios::binary);
+    std::ofstream outFile(outputPath, std::ios::binary);
     if (!outFile.is_open()) return false;
 
     char ch;
     char countChar;
     while (inFile.get(ch) && inFile.get(countChar)) {
-        uint8_t count = static_cast<uint8_t>(countChar);
-        for (uint8_t i = 0; i < count; ++i) {
+        std::uint8_t count = static_cast<std::uint8_t>(countChar);
+        for (std::uint8_t i = 0; i < count; ++i) {
             outFile.put(ch);
         }
     }

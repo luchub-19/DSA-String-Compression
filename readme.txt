@@ -14,7 +14,7 @@ This project requires the GNU g++ compiler with C++17 support.
 
 Method 1 — Direct g++ compilation (RECOMMENDED for grading):
 
-    g++ src/*.cpp utils/*.cpp -o compressor -std=c++17
+    g++ src/*.cpp -o compressor -std=c++17
 
 Method 2 — CMake build:
 
@@ -96,8 +96,6 @@ After each compression, the tool prints a summary to stdout:
     │   ├── Huffman.h / .cpp    — Huffman algorithm (Nhat Tien)
     │   ├── rle.h / rle.cpp     — RLE algorithm (Quang Tien)
     │   └── bonus_lz77.h / .cpp — LZ77 bonus algorithm (Quang Tien)
-    ├── utils/
-    │   └── utils.h / utils.cpp — Shared utility functions
     ├── tests/
     │   ├── sample_input.txt    — Running example: BABBACAC
     │   └── scenario2/          — Entropy-varying test data

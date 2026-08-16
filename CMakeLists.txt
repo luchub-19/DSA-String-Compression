@@ -7,13 +7,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 file(GLOB SRC_FILES ${CMAKE_SOURCE_DIR}/src/*.cpp)
-file(GLOB UTIL_FILES ${CMAKE_SOURCE_DIR}/utils/*.cpp)
 
-add_executable(compressor ${SRC_FILES} ${UTIL_FILES})
+add_executable(compressor ${SRC_FILES})
 
 target_include_directories(compressor PRIVATE
     ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/utils
 )
 
 if(MSVC)

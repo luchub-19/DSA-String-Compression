@@ -6,8 +6,6 @@
 #include <cstring>
 #include <stdexcept>
 
-using namespace std;
-
 struct HuffmanNode {
     unsigned char ch;
     unsigned long long freq;
