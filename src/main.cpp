@@ -1,12 +1,5 @@
-// main.cpp
-//
-// Command-line entry point for the compression tool:
-//   compressor[.exe] -a [algorithm] -m [mode] -i [input_file] -o [output_file]
-//
+// CLI entry point: compressor -a [algo] -m [mode] -i [input] -o [output]
 // Owner: Phat (CLI framework + performance metrics)
-//
-// This file only knows about the ICompressor interface, so RLE/Huffman can
-// be implemented independently by teammates without touching this file.
 
 #include "compressor.hpp"
 #include "Huffman.h"
@@ -43,8 +36,7 @@ std::unique_ptr<ICompressor> createCompressor(const std::string& algo) {
     return nullptr;
 }
 
-// Parses "-x value" pairs into a map. Returns false (and prints an error)
-// on any malformed argument.
+// Parses "-x value" pairs into a map; false on malformed argument.
 bool parseArgs(int argc, char** argv, std::unordered_map<std::string, std::string>& out) {
     for (int i = 1; i < argc; ++i) {
         std::string token = argv[i];
@@ -83,8 +75,6 @@ void printPerformanceSummary(const std::string& mode,
         std::cout << std::setprecision(2) << "Compression Ratio: " << ratio << '\n';
         std::cout << std::setprecision(1) << "Space Savings: " << savingsPct << "%\n";
     } else {
-        // Decompression: ratio/space-savings are compression-specific
-        // metrics, so we report sizes only.
         std::cout << "Compressed Size: " << inputSize << " bytes\n";
         std::cout << "Decompressed Size: " << outputSize << " bytes\n";
     }

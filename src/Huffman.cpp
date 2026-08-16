@@ -318,10 +318,7 @@ bool decompressHuffman(const std::string& inputPath, const std::string& outputPa
     return true;
 }
 
-// ============================================================
-// ICompressor adapter — wraps the free functions above
-// ============================================================
-
+// ICompressor adapter
 void HuffmanCompressor::compress(const std::string& inputPath, const std::string& outputPath) {
     if (!compressHuffman(inputPath, outputPath)) {
         throw std::runtime_error("Huffman compression failed (check input file).");

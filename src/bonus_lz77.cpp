@@ -1,105 +1,78 @@
-#include "bonus_lz77.h"
+#include "rle.h"
 #include <fstream>
 #include <vector>
 #include <cstdint>
+#include <iostream>
 using namespace std;
 
-#pragma pack(push, 1)
-struct LZ77Token {
-    uint16_t offset;
-    uint8_t length;
-    uint8_t nextChar;
-};
-#pragma pack(pop)
-
-bool compressLZ77(const string& inputPath, const string& outputPath) {
+bool compressRLE(const string& inputPath, const string& outputPath) {
     ifstream inFile(inputPath, ios::binary);
     if (!inFile.is_open()) return false;
 
-    vector<uint8_t> data((istreambuf_iterator<char>(inFile)),
-                               std::istreambuf_iterator<char>());
+    vector<uint8_t> buffer((istreambuf_iterator<char>(inFile)),
+                                 istreambuf_iterator<char>());
     inFile.close();
 
     ofstream outFile(outputPath, ios::binary);
     if (!outFile.is_open()) return false;
 
-    const uint16_t windowSize = 4095;
-    const uint8_t lookaheadSize = 255;
+    if (buffer.empty()) {
+        outFile.close();
+        return true;
+    }
 
+    size_t n = buffer.size();
     size_t i = 0;
-    size_t n = data.size();
-
     while (i < n) {
-        uint16_t bestMatchOffset = 0;
-        uint8_t bestMatchLength = 0;
+        uint8_t currentChar = buffer[i];
+        uint8_t count = 1;
 
-        size_t searchStart = (i > windowSize) ? (i - windowSize) : 0;
-
-        for (size_t j = searchStart; j < i; ++j) {
-            uint8_t matchLen = 0;
-            while (i + matchLen < n && 
-                   data[j + matchLen] == data[i + matchLen] && 
-                   matchLen < lookaheadSize) {
-                matchLen++;
-            }
-
-            if (matchLen > bestMatchLength) {
-                bestMatchLength = matchLen;
-                bestMatchOffset = static_cast<uint16_t>(i - j);
-            }
+        while (i + 1 < n && buffer[i + 1] == currentChar && count < 255) {
+            count++;
+            i++;
         }
-
-        uint8_t nextChar = (i + bestMatchLength < n) ? data[i + bestMatchLength] : 0;
-        LZ77Token token = {bestMatchOffset, bestMatchLength, nextChar};
-
-        outFile.write(reinterpret_cast<const char*>(&token), sizeof(LZ77Token));
-        i += bestMatchLength + 1;
+        
+        outFile.put(static_cast<char>(currentChar));
+        outFile.put(static_cast<char>(count));
+        i++;
     }
 
     outFile.close();
     return true;
 }
 
-bool decompressLZ77(const string& inputPath, const string& outputPath) {
+bool decompressRLE(const string& inputPath, const string& outputPath) {
     ifstream inFile(inputPath, ios::binary);
     if (!inFile.is_open()) return false;
 
     ofstream outFile(outputPath, ios::binary);
     if (!outFile.is_open()) return false;
 
-    vector<uint8_t> decompressedData;
-    LZ77Token token;
-
-    while (inFile.read(reinterpret_cast<char*>(&token), sizeof(LZ77Token))) {
-        if (token.length > 0) {
-            size_t startPos = decompressedData.size() - token.offset;
-            for (uint8_t i = 0; i < token.length; ++i) {
-                decompressedData.push_back(decompressedData[startPos + i]);
-            }
+    char ch;
+    char countChar;
+    while (inFile.get(ch) && inFile.get(countChar)) {
+        uint8_t count = static_cast<uint8_t>(countChar);
+        for (uint8_t i = 0; i < count; ++i) {
+            outFile.put(ch);
         }
-        decompressedData.push_back(token.nextChar);
     }
 
-    outFile.write(reinterpret_cast<const char*>(decompressedData.data()), decompressedData.size());
     inFile.close();
     outFile.close();
     return true;
 }
 
-// ============================================================
-// ICompressor adapter — wraps the free functions above
-// ============================================================
-
+// ICompressor adapter
 #include <stdexcept>
 
-void LZ77Compressor::compress(const std::string& inputPath, const std::string& outputPath) {
-    if (!compressLZ77(inputPath, outputPath)) {
-        throw std::runtime_error("LZ77 compression failed (check input file).");
+void RLECompressor::compress(const std::string& inputPath, const std::string& outputPath) {
+    if (!compressRLE(inputPath, outputPath)) {
+        throw std::runtime_error("RLE compression failed (check input file).");
     }
 }
 
-void LZ77Compressor::decompress(const std::string& inputPath, const std::string& outputPath) {
-    if (!decompressLZ77(inputPath, outputPath)) {
-        throw std::runtime_error("LZ77 decompression failed (corrupted or invalid input).");
+void RLECompressor::decompress(const std::string& inputPath, const std::string& outputPath) {
+    if (!decompressRLE(inputPath, outputPath)) {
+        throw std::runtime_error("RLE decompression failed (corrupted or invalid input).");
     }
 }

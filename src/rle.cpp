@@ -62,10 +62,7 @@ bool decompressRLE(const string& inputPath, const string& outputPath) {
     return true;
 }
 
-// ============================================================
-// ICompressor adapter — wraps the free functions above
-// ============================================================
-
+// ICompressor adapter
 #include <stdexcept>
 
 void RLECompressor::compress(const std::string& inputPath, const std::string& outputPath) {
