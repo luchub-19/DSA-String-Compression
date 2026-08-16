@@ -20,7 +20,6 @@ void writeFile(const string& filepath, const string& content) {
     }
 }
 
-// In kết quả theo đúng format yêu cầu của đề
 void printPerformanceSummary(const string& algo, const RunMetrics& metrics) {
     cout << "Compression complete.\n";
     cout << "--------------------------------\n";

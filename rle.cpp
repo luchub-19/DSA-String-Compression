@@ -1,35 +1,63 @@
 #include "rle.h"
-#include <sstream>
-
+#include <fstream>
+#include <vector>
+#include <cstdint>
+#include <iostream>
 using namespace std;
 
-string rleCompress(const string& input) {
-    if (input.empty()) return "";
-    ostringstream oss; 
-    int count = 1;
-    for (size_t i = 1; i < input.length(); ++i) {
-        if (input[i] == input[i - 1]) {
-            count++;
-        } else {
-            oss << count << input[i - 1];
-            count = 1;
-        }
+bool compressRLE(const string& inputPath, const string& outputPath) {
+    ifstream inFile(inputPath, ios::binary);
+    if (!inFile.is_open()) return false;
+
+    vector<uint8_t> buffer((istreambuf_iterator<char>(inFile)),
+                                 istreambuf_iterator<char>());
+    inFile.close();
+
+    ofstream outFile(outputPath, ios::binary);
+    if (!outFile.is_open()) return false;
+
+    if (buffer.empty()) {
+        outFile.close();
+        return true;
     }
-    oss << count << input[input.length() - 1];
-    return oss.str();
+
+    size_t n = buffer.size();
+    size_t i = 0;
+    while (i < n) {
+        uint8_t currentChar = buffer[i];
+        uint8_t count = 1;
+
+        while (i + 1 < n && buffer[i + 1] == currentChar && count < 255) {
+            count++;
+            i++;
+        }
+        
+        outFile.put(static_cast<char>(currentChar));
+        outFile.put(static_cast<char>(count));
+        i++;
+    }
+
+    outFile.close();
+    return true;
 }
 
-string rleDecompress(const string& input) {
-    if (input.empty()) return "";
-    ostringstream oss;
-    int count = 0;
-    for (size_t i = 0; i < input.length(); ++i) {
-        if (input[i] >= '0' && input[i] <= '9') {
-            count = count * 10 + (input[i] - '0');
-        } else {
-            for (int j = 0; j < count; ++j) oss << input[i];
-            count = 0; 
+bool decompressRLE(const string& inputPath, const string& outputPath) {
+    ifstream inFile(inputPath, ios::binary);
+    if (!inFile.is_open()) return false;
+
+    ofstream outFile(outputPath, ios::binary);
+    if (!outFile.is_open()) return false;
+
+    char ch;
+    char countChar;
+    while (inFile.get(ch) && inFile.get(countChar)) {
+        uint8_t count = static_cast<uint8_t>(countChar);
+        for (uint8_t i = 0; i < count; ++i) {
+            outFile.put(ch);
         }
     }
-    return oss.str();
+
+    inFile.close();
+    outFile.close();
+    return true;
 }
