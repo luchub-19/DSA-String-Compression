@@ -16,6 +16,11 @@ Method 1 — Direct g++ compilation (RECOMMENDED for grading):
 
     g++ src/*.cpp -o compressor -std=c++17
 
+    If the grading environment does not expand the src/*.cpp wildcard,
+    the equivalent explicit file list is:
+
+    g++ src/main.cpp src/rle.cpp src/Huffman.cpp src/lzw.cpp src/bonus_lz77.cpp src/deflate.cpp -o compressor -std=c++17
+
 Method 2 — CMake build:
 
     mkdir build && cd build
@@ -31,16 +36,18 @@ Both methods produce a `compressor` executable in the project root.
     ./compressor -a [algorithm] -m [mode] -i [input_file] -o [output_file]
 
 Options:
-    -a [algorithm]   Select algorithm: rle, huff, lzw, lz77
+    -a [algorithm]   Select algorithm: rle, huff, lzw, lz77, deflate
     -m [mode]        Select mode: c (compress), d (decompress)
     -i [input_file]  Path to the source file
     -o [output_file] Path to the resulting file
 
 Supported algorithms:
-    rle   — Run-Length Encoding
-    huff  — Huffman Coding
-    lzw   — Lempel-Ziv-Welch
-    lz77  — LZ77 (bonus algorithm)
+    rle      — Run-Length Encoding
+    huff     — Huffman Coding
+    lzw      — Lempel-Ziv-Welch
+    lz77     — LZ77 (bonus algorithm)
+    deflate  — LZ77 + Huffman (bonus algorithm; chains lz77 then huff
+               for a real two-stage Deflate-style compressor)
 
 --------------------------------------------------------------------------------
 3. EXAMPLES
@@ -66,6 +73,10 @@ Compress with LZ77 (bonus):
 
     ./compressor -a lz77 -m c -i tests/sample_input.txt -o output.lz77
 
+Compress with Deflate — LZ77 + Huffman (bonus):
+
+    ./compressor -a deflate -m c -i tests/sample_input.txt -o output.deflate
+
 --------------------------------------------------------------------------------
 4. PERFORMANCE OUTPUT
 --------------------------------------------------------------------------------
@@ -74,7 +85,7 @@ After each compression, the tool prints a summary to stdout:
 
     Compression complete.
     --------------------------------
-    Algorithm: LZW
+    Algorithm: RLE
     Execution Time: 0.05 ms
     Original Size: 20 bytes
     Compressed Size: 8 bytes
@@ -95,7 +106,9 @@ After each compression, the tool prints a summary to stdout:
     │   ├── lzw.hpp / lzw.cpp   — LZW algorithm (Phat)
     │   ├── Huffman.h / .cpp    — Huffman algorithm (Nhat Tien)
     │   ├── rle.h / rle.cpp     — RLE algorithm (Quang Tien)
-    │   └── bonus_lz77.h / .cpp — LZ77 bonus algorithm (Quang Tien)
+    │   ├── bonus_lz77.h / .cpp — LZ77 bonus algorithm (Quang Tien)
+    │   └── deflate.h / .cpp    — Deflate bonus algorithm (LZ77+Huffman;
+    │                             chains bonus_lz77 + Huffman)
     ├── tests/
     │   ├── sample_input.txt    — Running example: BABBACAC
     │   └── scenario2/          — Entropy-varying test data

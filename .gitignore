@@ -5,3 +5,12 @@ compressor.exe
 *.o
 *.dSYM/
 .DS_Store
+*.tmp
+
+# Windows / MSVC
+.vs/
+*.obj
+*.pdb
+*.ilk
+Thumbs.db
+desktop.ini

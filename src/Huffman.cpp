@@ -1,5 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "Huffman.h"
+#include <cstdio>
 #include <iostream>
 #include <vector>
 #include <string>

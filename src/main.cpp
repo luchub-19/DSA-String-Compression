@@ -6,6 +6,7 @@
 #include "lzw.hpp"
 #include "rle.h"
 #include "bonus_lz77.h"
+#include "deflate.h"
 
 #include <chrono>
 #include <filesystem>
@@ -22,7 +23,7 @@ namespace {
 void printUsage(const char* progName) {
     std::cerr << "Usage: " << progName << " -a [algorithm] -m [mode] -i [input_file] -o [output_file]\n\n"
               << "Options:\n"
-              << "  -a [algorithm]   Select algorithm: rle, huff, lzw, lz77\n"
+              << "  -a [algorithm]   Select algorithm: rle, huff, lzw, lz77, deflate\n"
               << "  -m [mode]        Select mode: c (compress), d (decompress)\n"
               << "  -i [input_file]  Path to the source file\n"
               << "  -o [output_file] Path to the resulting file\n";
@@ -33,6 +34,7 @@ std::unique_ptr<ICompressor> createCompressor(const std::string& algo) {
     if (algo == "rle")  return std::make_unique<RLECompressor>();
     if (algo == "huff") return std::make_unique<HuffmanCompressor>();
     if (algo == "lz77") return std::make_unique<LZ77Compressor>();
+    if (algo == "deflate") return std::make_unique<DeflateCompressor>();
     return nullptr;
 }
 
@@ -107,7 +109,7 @@ int main(int argc, char** argv) {
 
     std::unique_ptr<ICompressor> compressor = createCompressor(algo);
     if (!compressor) {
-        std::cerr << "Error: unknown algorithm '" << algo << "'. Choose from: rle, huff, lzw, lz77\n";
+        std::cerr << "Error: unknown algorithm '" << algo << "'. Choose from: rle, huff, lzw, lz77, deflate\n";
         return 1;
     }
 
