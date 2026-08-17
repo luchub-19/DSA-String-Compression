@@ -24,7 +24,6 @@ public:
         }
     }
 
-    // Call once after the last writeBits(); pads remaining bits with 0.
     void flush() {
         if (bitCount_ > 0) {
             buffer_ = static_cast<std::uint8_t>(buffer_ << (8 - bitCount_));
@@ -44,7 +43,6 @@ class LZWBitReader {
 public:
     explicit LZWBitReader(std::ifstream& in) : in_(in) {}
 
-    // Reads numBits bits (MSB first) into value; false on end-of-stream.
     bool readBits(int numBits, std::uint32_t& value) {
         value = 0;
         for (int i = 0; i < numBits; ++i) {

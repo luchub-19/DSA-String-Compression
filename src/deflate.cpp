@@ -13,9 +13,6 @@ namespace fs = std::filesystem;
 namespace {
 
 std::string makeTempPath(const std::string& nearPath) {
-    // Same directory as the real output so the temp file stays on one
-    // filesystem (safe to rename/remove), plus a random suffix so two
-    // concurrent runs never collide on the same temp name.
     static std::random_device rd;
     std::ostringstream oss;
     oss << nearPath << ".stage" << rd() << ".tmp";
@@ -37,7 +34,7 @@ private:
     std::string path_;
 };
 
-} // namespace
+}
 
 bool compressDeflate(const std::string& inputPath, const std::string& outputPath) {
     TempFileGuard temp(makeTempPath(outputPath));

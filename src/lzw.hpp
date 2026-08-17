@@ -14,5 +14,5 @@ private:
     // Codes grow 9->16 bits; dictionary freezes once full (classic LZW).
     static constexpr int kMinCodeWidth = 9;
     static constexpr int kMaxCodeWidth = 16;
-    static constexpr int kDictLimit = 1 << kMaxCodeWidth; // 65536
+    static constexpr int kDictLimit = 1 << kMaxCodeWidth;
 };
