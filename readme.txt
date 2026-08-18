@@ -111,9 +111,13 @@ After each compression, the tool prints a summary to stdout:
     │                             chains bonus_lz77 + Huffman)
     ├── tests/
     │   ├── sample_input.txt    — Running example: BABBACAC
-    │   └── scenario2/          — Entropy-varying test data
+    │   ├── demo_rle_good.txt   — RLE best case (for manual demo)
+    │   ├── demo_rle_bad.txt    — RLE worst case (for manual demo)
+    │   ├── scenario1/          — File-size sweep: 10 KB - 10 MB, English text
+    │   └── scenario2/          — Entropy sweep: repetitive / English / random, 1 MB each
     └── data/
-        └── (test output files)
+        └── generate_tests.py   — Regenerates tests/scenario1 and tests/scenario2
+                                  (run from project root: python3 data/generate_tests.py)
 
 --------------------------------------------------------------------------------
 6. TEAM MEMBERS
