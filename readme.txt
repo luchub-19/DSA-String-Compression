@@ -5,6 +5,7 @@
 Group Project: String Compression
 Course: CSC10004 - Data Structures & Algorithms
 Term: Summer 2026
+Repo link: https://github.com/luchub-19/DSA-String-Compression
 
 --------------------------------------------------------------------------------
 1. COMPILATION
